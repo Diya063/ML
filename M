@@ -167,3 +167,82 @@ plt.figure(figsize=(10, 7))
 dendrogram(linked)
 plt.show()
 
+
+# 📌 Step 1: Import Required Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 📌 Step 2: Load the CSV File
+df = pd.read_csv('data.csv')  # Replace with your filename
+print("Dataset:")
+print(df)
+
+# 📌 Step 3: Extract Features and Target
+X = df[['Hours']].values
+y = df['Scores'].values
+
+# 📌 Step 4: Normalize the Data (Min-Max)
+X_min, X_max = X.min(), X.max()
+y_min, y_max = y.min(), y.max()
+
+X_norm = (X - X_min) / (X_max - X_min)
+y_norm = (y - y_min) / (y_max - y_min)
+
+# 📌 Step 5: Add Bias Term (X0 = 1)
+X_b = np.c_[np.ones((X_norm.shape[0], 1)), X_norm]
+
+# 📌 Step 6: Initialize Parameters
+theta = np.zeros(2)
+alpha = 0.01
+epochs = 1000
+m = len(X_b)
+
+# 📌 Step 7: Gradient Descent Without Regularization
+for i in range(epochs):
+    predictions = X_b.dot(theta)
+    errors = predictions - y_norm
+    gradients = (2/m) * X_b.T.dot(errors)
+    theta -= alpha * gradients
+
+print("\n🎯 Parameters after Gradient Descent (No Regularization):", theta)
+
+# 📌 Step 8: Predict on Normalized Data
+y_pred_norm = X_b.dot(theta)
+y_pred = y_pred_norm * (y_max - y_min) + y_min
+
+# 📌 Step 9: Plot Predictions
+plt.scatter(X, y, color='blue', label='Actual')
+plt.plot(X, y_pred, color='red', label='Prediction')
+plt.xlabel("Hours")
+plt.ylabel("Scores")
+plt.title("Linear Regression (Manual GD)")
+plt.legend()
+plt.show()
+
+# 📌 Step 10: Ridge Regression (L2)
+theta_ridge = np.zeros(2)
+lambda_ = 0.1
+
+for i in range(epochs):
+    predictions = X_b.dot(theta_ridge)
+    errors = predictions - y_norm
+    gradients = (2/m) * X_b.T.dot(errors) + 2 * lambda_ * theta_ridge
+    gradients[0] -= 2 * lambda_ * theta_ridge[0]  # don't regularize bias
+    theta_ridge -= alpha * gradients
+
+print("\n Parameters after Ridge Regularization:", theta_ridge)
+
+# 📌 Step 11: Lasso Regression (L1)
+theta_lasso = np.zeros(2)
+lambda_ = 0.1
+
+for i in range(epochs):
+    predictions = X_b.dot(theta_lasso)
+    errors = predictions - y_norm
+    gradients = (2/m) * X_b.T.dot(errors) + lambda_ * np.sign(theta_lasso)
+    gradients[0] -= lambda_ * np.sign(theta_lasso[0])
+    theta_lasso -= alpha * gradients
+
+print("\n Parameters after Lasso Regularization:", theta_lasso)
+
