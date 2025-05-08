@@ -246,3 +246,192 @@ for i in range(epochs):
 
 print("\n Parameters after Lasso Regularization:", theta_lasso)
 
+# Full implementation of 13 machine learning algorithms without using external libraries
+
+# Dataset for regression models (Hours vs Scores)
+X_reg = [1, 2, 3, 4, 5]
+y_reg = [1.5, 3.2, 4.5, 6.4, 7.5]
+
+# Dataset for classification models (feature: hours, label: pass/fail)
+X_clf = [1, 2, 3, 4, 5]
+y_clf = [0, 0, 0, 1, 1]
+
+# 1. Simple Linear Regression
+def simple_linear_regression(X, y):
+    n = len(X)
+    mean_x = sum(X) / n
+    mean_y = sum(y) / n
+    num = sum((X[i] - mean_x) * (y[i] - mean_y) for i in range(n))
+    den = sum((X[i] - mean_x) ** 2 for i in range(n))
+    b1 = num / den
+    b0 = mean_y - b1 * mean_x
+    return b0, b1
+
+# 2. Multiple Linear Regression
+def multiple_linear_regression(X, y):
+    # For simplicity, assume X is a list of lists
+    from copy import deepcopy
+    def transpose(matrix):
+        return list(map(list, zip(*matrix)))
+
+    def matmul(A, B):
+        return [[sum(a * b for a, b in zip(row, col)) for col in zip(*B)] for row in A]
+
+    def inverse(matrix):
+        # Only 2x2 inverse for simplicity
+        a, b, c, d = matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]
+        det = a * d - b * c
+        return [[d / det, -b / det], [-c / det, a / det]]
+
+    X_b = [[1] + row for row in X]  # Add bias term
+    XT = transpose(X_b)
+    XTX = matmul(XT, X_b)
+    XTX_inv = inverse(XTX)
+    XTy = matmul(XT, [[yi] for yi in y])
+    theta = matmul(XTX_inv, XTy)
+    return [t[0] for t in theta]
+
+# 3. Polynomial Regression (degree 2)
+def polynomial_regression(X, y, degree=2):
+    X_poly = [[x ** d for d in range(degree + 1)] for x in X]
+    return multiple_linear_regression(X_poly, y)
+
+# 4. Ridge Regression (with Gradient Descent)
+def ridge_regression(X, y, alpha=0.01, lambda_=0.1, epochs=1000):
+    theta = [0, 0]
+    m = len(X)
+    for _ in range(epochs):
+        preds = [theta[0] + theta[1] * X[i] for i in range(m)]
+        errors = [preds[i] - y[i] for i in range(m)]
+        grad0 = (2 / m) * sum(errors)
+        grad1 = (2 / m) * sum(errors[i] * X[i] for i in range(m)) + 2 * lambda_ * theta[1]
+        theta[0] -= alpha * grad0
+        theta[1] -= alpha * grad1
+    return theta
+
+# 5. Lasso Regression (with Gradient Descent)
+def lasso_regression(X, y, alpha=0.01, lambda_=0.1, epochs=1000):
+    theta = [0, 0]
+    m = len(X)
+    for _ in range(epochs):
+        preds = [theta[0] + theta[1] * X[i] for i in range(m)]
+        errors = [preds[i] - y[i] for i in range(m)]
+        grad0 = (2 / m) * sum(errors)
+        grad1 = (2 / m) * sum(errors[i] * X[i] for i in range(m)) + lambda_ * (1 if theta[1] > 0 else -1)
+        theta[0] -= alpha * grad0
+        theta[1] -= alpha * grad1
+    return theta
+
+# 6. Logistic Regression
+def sigmoid(z):
+    return 1 / (1 + pow(2.71828, -z))
+
+def logistic_regression(X, y, alpha=0.1, epochs=1000):
+    theta = [0, 0]
+    m = len(X)
+    for _ in range(epochs):
+        for i in range(m):
+            z = theta[0] + theta[1] * X[i]
+            pred = sigmoid(z)
+            error = pred - y[i]
+            theta[0] -= alpha * error
+            theta[1] -= alpha * error * X[i]
+    return theta
+
+# 7. K-Nearest Neighbors
+def knn(X_train, y_train, x_test, k=3):
+    distances = [(abs(x_test - X_train[i]), y_train[i]) for i in range(len(X_train))]
+    distances.sort()
+    top_k = [label for _, label in distances[:k]]
+    return max(set(top_k), key=top_k.count)
+
+# 8. Decision Tree (Stump for simplicity)
+def decision_tree(X, y):
+    threshold = sum(X) / len(X)
+    left_label = max(set([y[i] for i in range(len(X)) if X[i] <= threshold]), key=y.count)
+    right_label = max(set([y[i] for i in range(len(X)) if X[i] > threshold]), key=y.count)
+    return threshold, left_label, right_label
+
+# 9. Support Vector Machine (linear, no kernel, hard-margin)
+def svm(X, y, alpha=0.01, epochs=1000):
+    w, b = 0, 0
+    for _ in range(epochs):
+        for i in range(len(X)):
+            condition = y[i] * (w * X[i] + b) >= 1
+            if condition:
+                w -= alpha * (2 * 1e-4 * w)
+            else:
+                w += alpha * (y[i] * X[i] - 2 * 1e-4 * w)
+                b += alpha * y[i]
+    return w, b
+
+# 10. K-Means Clustering
+def kmeans(X, k=2, epochs=10):
+    centers = [X[0], X[-1]]
+    for _ in range(epochs):
+        clusters = [[] for _ in range(k)]
+        for x in X:
+            dists = [abs(x - c) for c in centers]
+            clusters[dists.index(min(dists))].append(x)
+        centers = [sum(cluster) / len(cluster) if cluster else c for cluster, c in zip(clusters, centers)]
+    return centers, clusters
+
+# 11. Hierarchical Clustering (Single Linkage)
+def hierarchical_clustering(X):
+    clusters = [[x] for x in X]
+    while len(clusters) > 1:
+        min_dist = float('inf')
+        to_merge = (0, 1)
+        for i in range(len(clusters)):
+            for j in range(i + 1, len(clusters)):
+                d = min(abs(a - b) for a in clusters[i] for b in clusters[j])
+                if d < min_dist:
+                    min_dist, to_merge = d, (i, j)
+        i, j = to_merge
+        clusters[i] += clusters[j]
+        del clusters[j]
+    return clusters
+
+# 12. Neural Network (1 neuron, sigmoid)
+def simple_neural_net(X, y, alpha=0.1, epochs=1000):
+    w, b = 0.0, 0.0
+    for _ in range(epochs):
+        for i in range(len(X)):
+            z = w * X[i] + b
+            pred = sigmoid(z)
+            error = pred - y[i]
+            w -= alpha * error * X[i]
+            b -= alpha * error
+    return w, b
+
+# 13. Gradient Descent (Generic Example)
+def gradient_descent(X, y, alpha=0.01, epochs=1000):
+    theta0, theta1 = 0, 0
+    m = len(X)
+    for _ in range(epochs):
+        predictions = [theta0 + theta1 * X[i] for i in range(m)]
+        errors = [predictions[i] - y[i] for i in range(m)]
+        grad0 = (2 / m) * sum(errors)
+        grad1 = (2 / m) * sum(errors[i] * X[i] for i in range(m))
+        theta0 -= alpha * grad0
+        theta1 -= alpha * grad1
+    return theta0, theta1
+
+# Output a summary of all algorithm results
+results = {
+    "Simple Linear Regression": simple_linear_regression(X_reg, y_reg),
+    "Polynomial Regression": polynomial_regression(X_reg, y_reg),
+    "Ridge Regression": ridge_regression(X_reg, y_reg),
+    "Lasso Regression": lasso_regression(X_reg, y_reg),
+    "Logistic Regression": logistic_regression(X_clf, y_clf),
+    "KNN (test=3)": knn(X_clf, y_clf, 3),
+    "Decision Tree": decision_tree(X_clf, y_clf),
+    "SVM": svm(X_clf, [1 if y == 1 else -1 for y in y_clf]),
+    "KMeans": kmeans(X_reg),
+    "Hierarchical Clustering": hierarchical_clustering(X_reg),
+    "Neural Net": simple_neural_net(X_clf, y_clf),
+    "Gradient Descent": gradient_descent(X_reg, y_reg)
+}
+
+results
+
